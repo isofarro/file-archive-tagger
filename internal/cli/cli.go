@@ -114,24 +114,50 @@ func (c *CLI) HandleSearchCommand(args []string) error {
 // HandleCheckCommand processes check-related commands
 func (c *CLI) HandleCheckCommand(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: fart check <file-path>")
+		return fmt.Errorf("usage: fart check <file-or-directory-path>")
 	}
 
-	filePath := args[1]
+	path := args[1]
+	info, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("failed to access path: %w", err)
+	}
+
+	if info.IsDir() {
+		return filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+			if err != nil {
+				fmt.Printf("Warning: error accessing %s: %v\n", filePath, err)
+				return nil // continue walking
+			}
+
+			// Skip directories and hidden files
+			if info.IsDir() || strings.HasPrefix(filepath.Base(filePath), ".") {
+				return nil
+			}
+
+			return c.checkSingleFile(filePath)
+		})
+	}
+
+	return c.checkSingleFile(path)
+}
+
+// checkSingleFile checks a single file against the database
+func (c *CLI) checkSingleFile(filePath string) error {
 	fileInfo, err := fileops.GetFileInfo(filePath)
 	if err != nil {
-		return fmt.Errorf("failed to get file info: %w", err)
+		return fmt.Errorf("failed to get file info for %s: %w", filePath, err)
 	}
 
 	matchingPath, err := c.db.GetFilePathByHash(fileInfo.Hash)
 	if err != nil {
-		return fmt.Errorf("failed to check file existence: %w", err)
+		return fmt.Errorf("failed to check file existence for %s: %w", filePath, err)
 	}
 
 	if matchingPath != "" {
-		fmt.Printf("File already exists at: %s\n", matchingPath)
+		fmt.Printf("File %s already exists at: %s\n", filePath, matchingPath)
 	} else {
-		fmt.Printf("File does not exist in the database\n")
+		fmt.Printf("File %s is new\n", filePath)
 	}
 
 	return nil
