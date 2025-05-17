@@ -216,3 +216,39 @@ func (db *DB) GetAllFiles() ([]string, error) {
     }
     return files, nil
 }
+
+// UpdateFilePath updates a file's path in the database
+func (db *DB) UpdateFilePath(oldPath, newPath string) error {
+	oldDir := filepath.Dir(oldPath)
+	oldName := filepath.Base(oldPath)
+	newDir := filepath.Dir(newPath)
+	newName := filepath.Base(newPath)
+
+	if oldDir == "." {
+		oldDir = ""
+	}
+	if newDir == "." {
+		newDir = ""
+	}
+
+	query := `
+		UPDATE files 
+		SET filename = ?, path = ?
+		WHERE filename = ? AND path = ?
+	`
+	result, err := db.Exec(query, newName, newDir, oldName, oldDir)
+	if err != nil {
+		return fmt.Errorf("failed to update file path: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rows == 0 {
+		return fmt.Errorf("no file found with path: %s", oldPath)
+	}
+
+	return nil
+}

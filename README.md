@@ -70,3 +70,17 @@ Verifies that all the files matched by the glob pattern exist in the database. T
 
 When run without parameters, it verifies all the files from the current directory and its sub-directories.
 
+> fart normalise
+> fart normalise my-dir/
+> fart normalise my-other-dir/*.pdf
+
+Normalises the filenames of files both in the database and in the directory. This renames files to a standard format, removing special characters. The rules for normalising filenames are:
+
+* use `-` as a word separator
+* all characters are converted to lowercase, numbers are kept unchanged
+* replace `&` with the word `and`
+* apostrophes are removed, so `King's Gambit` becomes `kings-gambit`
+* other special characters are replaced with a `-`
+* camelCase words are normalises to `-` separated words
+* Multiple `-` are reduced to a single `-`
+

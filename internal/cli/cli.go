@@ -24,6 +24,7 @@ type DatabaseManager interface {
 	AddFile(filename, path, hash string, size int64, modifiedAt string) error
 	GetFilePathByHash(hash string) (string, error)
 	GetAllFiles() ([]string, error)
+	UpdateFilePath(oldPath, newPath string) error
 }
 
 func New(tm TaxonomyManager, db DatabaseManager) *CLI {
@@ -329,4 +330,68 @@ func (c *CLI) HandleVerifyCommand(args []string) error {
     }
 
     return nil
+}
+
+// HandleNormalizeCommand processes normalize-related commands
+func (c *CLI) HandleNormalizeCommand(args []string) error {
+	// Default to current directory if no path specified
+	path := "."
+	if len(args) > 1 {
+		path = args[1]
+	}
+
+	// Get all files from the specified path/pattern
+	var matches []string
+	if strings.ContainsAny(path, "*?[]") {
+		// Handle glob pattern
+		var err error
+		matches, err = filepath.Glob(path)
+		if err != nil {
+			return fmt.Errorf("invalid pattern %s: %w", path, err)
+		}
+	} else {
+		// Handle directory
+		err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() && !strings.HasPrefix(filepath.Base(path), ".") {
+				matches = append(matches, path)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("failed to walk directory: %w", err)
+		}
+	}
+
+	// Process each file
+	for _, filePath := range matches {
+		dir := filepath.Dir(filePath)
+		oldName := filepath.Base(filePath)
+		newName := fileops.NormalizeFilename(oldName)
+
+		if oldName != newName {
+			// Create new path
+			newPath := filepath.Join(dir, newName)
+
+			// Rename file in filesystem
+			err := os.Rename(filePath, newPath)
+			if err != nil {
+				fmt.Printf("Warning: failed to rename %s: %v\n", filePath, err)
+				continue
+			}
+
+			// Update database
+			err = c.db.UpdateFilePath(filePath, newPath)
+			if err != nil {
+				fmt.Printf("Warning: failed to update database for %s: %v\n", filePath, err)
+				continue
+			}
+
+			fmt.Printf("Normalized: %s -> %s\n", filePath, newPath)
+		}
+	}
+
+	return nil
 }
