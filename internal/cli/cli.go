@@ -23,6 +23,7 @@ type DatabaseManager interface {
 	FileExists(hash string) (bool, error)
 	AddFile(filename, path, hash string, size int64, modifiedAt string) error
 	GetFilePathByHash(hash string) (string, error)
+	GetAllFiles() ([]string, error)
 }
 
 func New(tm TaxonomyManager, db DatabaseManager) *CLI {
@@ -258,4 +259,74 @@ func (c *CLI) addDirectory(path string) error {
 
 		return c.addFile(filePath)
 	})
+}
+
+// HandleVerifyCommand processes verify-related commands
+func (c *CLI) HandleVerifyCommand(args []string) error {
+    // Default to current directory if no path specified
+    path := "."
+    if len(args) > 1 {
+        path = args[1]
+    }
+
+    // Get all files from the specified path/pattern
+    var matches []string
+    if strings.ContainsAny(path, "*?[]") {
+        // Handle glob pattern
+        var err error
+        matches, err = filepath.Glob(path)
+        if err != nil {
+            return fmt.Errorf("invalid pattern %s: %w", path, err)
+        }
+    } else {
+        // Handle directory
+        err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+            if err != nil {
+                return err
+            }
+            if !info.IsDir() && !strings.HasPrefix(filepath.Base(path), ".") {
+                matches = append(matches, path)
+            }
+            return nil
+        })
+        if err != nil {
+            return fmt.Errorf("failed to walk directory: %w", err)
+        }
+    }
+
+    // Process each file
+    for _, filePath := range matches {
+        fileInfo, err := fileops.GetFileInfo(filePath)
+        if err != nil {
+            fmt.Printf("Warning: failed to get info for %s: %v\n", filePath, err)
+            continue
+        }
+
+        // Check if file exists in database
+        matchingPath, err := c.db.GetFilePathByHash(fileInfo.Hash)
+        if err != nil {
+            fmt.Printf("Warning: failed to check %s: %v\n", filePath, err)
+            continue
+        }
+
+        if matchingPath == "" {
+            fmt.Printf("New file: %s\n", filePath)
+        } else if matchingPath != filePath {
+            fmt.Printf("Moved/renamed: %s -> %s\n", matchingPath, filePath)
+        }
+    }
+
+    // Check for files in database that are missing from filesystem
+    dbFiles, err := c.db.GetAllFiles()
+    if err != nil {
+        return fmt.Errorf("failed to get database files: %w", err)
+    }
+
+    for _, dbFile := range dbFiles {
+        if _, err := os.Stat(dbFile); os.IsNotExist(err) {
+            fmt.Printf("Missing file: %s\n", dbFile)
+        }
+    }
+
+    return nil
 }

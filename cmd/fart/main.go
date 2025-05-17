@@ -48,6 +48,8 @@ func main() {
 		err = cliManager.HandleSearchCommand(os.Args[1:])
 	case "check":
 		err = cliManager.HandleCheckCommand(os.Args[1:])
+	case "verify":
+		err = cliManager.HandleVerifyCommand(os.Args[1:])
 	default:
 		fmt.Printf("Unknown command: %s\n", command)
 		os.Exit(1)

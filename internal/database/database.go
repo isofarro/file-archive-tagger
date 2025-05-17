@@ -196,3 +196,23 @@ func (db *DB) GetFilePathByHash(hash string) (string, error) {
 
 	return filepath.Join(path, filename), nil
 }
+
+// GetAllFiles returns all file paths in the database
+func (db *DB) GetAllFiles() ([]string, error) {
+    query := `SELECT path || '/' || filename FROM files`
+    rows, err := db.Query(query)
+    if err != nil {
+        return nil, fmt.Errorf("failed to query files: %w", err)
+    }
+    defer rows.Close()
+
+    var files []string
+    for rows.Next() {
+        var file string
+        if err := rows.Scan(&file); err != nil {
+            return nil, err
+        }
+        files = append(files, file)
+    }
+    return files, nil
+}

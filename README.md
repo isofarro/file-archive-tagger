@@ -62,3 +62,11 @@ Sets `../incoming-files/` as the stage directory
 
 Checks all the files in the stage directory and reports whether they already exist in the database. Again, using the hash of the file's contents as the comparator.
 
+> fart verify
+> fart verify my-dir/
+> fart verify my-other-dir/*.pdf
+
+Verifies that all the files matched by the glob pattern exist in the database. The output is a list of files that are not in the database, or in the database and not in the directory, whether it's because they are new, or deleted, or because the file has been renamed or moved to a different location.
+
+When run without parameters, it verifies all the files from the current directory and its sub-directories.
+
