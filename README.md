@@ -25,54 +25,54 @@ Creates a file in the current directory called  `.fart` (if it doesn't already e
 
 It then recurses through the current directory adding the files it finds to the database (not the directories). The important data is the filename, the path (from the current directory), the hash of the file contents, the size and last modified date.
 
-> fart add .
-> fart add my-file.pdf
-> fart add 2025/my-file.pdf
-> fart add 2025/*.pdf
+ fart add .
+ fart add my-file.pdf
+ fart add 2025/my-file.pdf
+ fart add 2025/*.pdf
 
 Adds files to the database, their metadata and a hash of the file's contents.
 
-> fart tag 2025/my-file.pdf 2025-ideas
+ fart tag 2025/my-file.pdf 2025-ideas
 
 This tags the file with the tax `2025-ideas`
 
-> fart taxonomy init author
-> fart taxonomy init series
+ fart taxonomy init author
+ fart taxonomy init series
 
 This creates a new taxonomies `author` and `series`.
 
-> fart tag --author "Jordan, Robert" books/eye-of-the-world.pdf
-> fart tag --series "The Wheel of Time" books/eye-of-the-world.pdf
+ fart tag --author "Jordan, Robert" books/eye-of-the-world.pdf
+ fart tag --series "The Wheel of Time" books/eye-of-the-world.pdf
 
 These two commands add Robert Jordan as the author and that it's part of The Wheel of Time series of books.
 
-> fart search --series "The Wheel of Time"
+ fart search --series "The Wheel of Time"
 
 Returns all files that are part of the series The Wheel of Time.
 
-> fart check ../incoming/random-file.pdf
+ fart check ../incoming/random-file.pdf
 
 Checks whether the file exists in the database, using the hash of the file's contents.
 
-> fart stage ../incoming-files/
+ fart stage ../incoming-files/
 
 Sets `../incoming-files/` as the stage directory
 
-> fart check
+ fart check
 
 Checks all the files in the stage directory and reports whether they already exist in the database. Again, using the hash of the file's contents as the comparator.
 
-> fart verify
-> fart verify my-dir/
-> fart verify my-other-dir/*.pdf
+ fart verify
+ fart verify my-dir/
+ fart verify my-other-dir/*.pdf
 
 Verifies that all the files matched by the glob pattern exist in the database. The output is a list of files that are not in the database, or in the database and not in the directory, whether it's because they are new, or deleted, or because the file has been renamed or moved to a different location.
 
 When run without parameters, it verifies all the files from the current directory and its sub-directories.
 
-> fart normalise
-> fart normalise my-dir/
-> fart normalise my-other-dir/*.pdf
+ fart normalise
+ fart normalise my-dir/
+ fart normalise my-other-dir/*.pdf
 
 Normalises the filenames of files both in the database and in the directory. This renames files to a standard format, removing special characters. The rules for normalising filenames are:
 
